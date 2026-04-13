@@ -1,8 +1,10 @@
-# 校园管理系统
+# CLAUDE.md
 
-中文校园管理系统，前后端分离单体架构。
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## 架构概览
+
+中文校园管理系统，前后端分离单体架构。
 
 ```
 school/
@@ -34,7 +36,7 @@ com.school
 └── system/        # SysUser, SysRole, SysUserRole
 ```
 
-**每个业务模块内部分层**：`controller → service/impl → mapper → entity/dto`
+**每个业务模块内部分层**：`controller → service/impl → convert → mapper → entity/dto`
 
 ### 核心约定
 
