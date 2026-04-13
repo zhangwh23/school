@@ -1,0 +1,58 @@
+package com.school.student.controller;
+
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.school.common.PageResult;
+import com.school.common.Result;
+import com.school.student.dto.StudentDTO;
+import com.school.student.entity.Student;
+import com.school.student.service.StudentService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+@RequestMapping("/api/students")
+@RequiredArgsConstructor
+public class StudentController {
+
+    private final StudentService studentService;
+
+    @GetMapping
+    @PreAuthorize("hasAnyRole('ADMIN','TEACHER')")
+    public Result<PageResult<Student>> list(
+            @RequestParam(defaultValue = "1") Integer page,
+            @RequestParam(defaultValue = "10") Integer size,
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) Long classId) {
+        Page<Student> pageResult = studentService.pageStudents(new Page<>(page, size), keyword, classId);
+        return Result.success(new PageResult<>(pageResult.getRecords(), pageResult.getTotal(), pageResult.getSize(), pageResult.getCurrent()));
+    }
+
+    @GetMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN','TEACHER')")
+    public Result<Student> detail(@PathVariable Long id) {
+        return Result.success(studentService.getStudentById(id));
+    }
+
+    @PostMapping
+    @PreAuthorize("hasRole('ADMIN')")
+    public Result<?> create(@Validated @RequestBody StudentDTO dto) {
+        studentService.createStudent(dto);
+        return Result.success();
+    }
+
+    @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public Result<?> update(@PathVariable Long id, @Validated @RequestBody StudentDTO dto) {
+        studentService.updateStudent(id, dto);
+        return Result.success();
+    }
+
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public Result<?> delete(@PathVariable Long id) {
+        studentService.deleteStudent(id);
+        return Result.success();
+    }
+}
