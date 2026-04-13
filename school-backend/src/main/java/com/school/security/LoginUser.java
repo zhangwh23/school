@@ -1,5 +1,6 @@
 package com.school.security;
 
+import com.school.common.StatusEnum;
 import com.school.system.entity.SysUser;
 import lombok.Getter;
 import org.springframework.security.core.GrantedAuthority;
@@ -8,10 +9,14 @@ import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.Collection;
 import java.util.List;
-import java.util.stream.Collectors;
 
+/**
+ * Spring Security 登录态包装，承载已认证用户与角色信息
+ */
 @Getter
 public class LoginUser implements UserDetails {
+
+    private static final String ROLE_PREFIX = "ROLE_";
 
     private final SysUser sysUser;
     private final List<String> roles;
@@ -24,8 +29,9 @@ public class LoginUser implements UserDetails {
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return roles.stream()
-                .map(role -> new SimpleGrantedAuthority("ROLE_" + role))
-                .collect(Collectors.toList());
+                .map(role -> new SimpleGrantedAuthority(ROLE_PREFIX + role))
+                .map(GrantedAuthority.class::cast)
+                .toList();
     }
 
     @Override
@@ -55,6 +61,6 @@ public class LoginUser implements UserDetails {
 
     @Override
     public boolean isEnabled() {
-        return sysUser.getStatus() == 1;
+        return StatusEnum.ENABLED.matches(sysUser.getStatus());
     }
 }

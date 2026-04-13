@@ -2,6 +2,9 @@ package com.school.common;
 
 import lombok.Getter;
 
+/**
+ * 业务异常，由 {@link GlobalExceptionHandler} 统一捕获并转换为 {@link Result}
+ */
 @Getter
 public class BusinessException extends RuntimeException {
 
@@ -9,11 +12,21 @@ public class BusinessException extends RuntimeException {
 
     public BusinessException(String message) {
         super(message);
-        this.code = 500;
+        this.code = ResultCode.INTERNAL_ERROR.getCode();
     }
 
     public BusinessException(int code, String message) {
         super(message);
         this.code = code;
+    }
+
+    public BusinessException(ResultCode resultCode) {
+        super(resultCode.getMessage());
+        this.code = resultCode.getCode();
+    }
+
+    public BusinessException(ResultCode resultCode, String message) {
+        super(message);
+        this.code = resultCode.getCode();
     }
 }

@@ -4,13 +4,13 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.school.common.BusinessException;
+import com.school.grade.convert.GradeConvert;
 import com.school.grade.dto.GradeDTO;
 import com.school.grade.dto.GradeStatistics;
 import com.school.grade.entity.Grade;
 import com.school.grade.mapper.GradeMapper;
 import com.school.grade.service.GradeService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -32,8 +32,7 @@ public class GradeServiceImpl extends ServiceImpl<GradeMapper, Grade> implements
 
     @Override
     public void createGrade(GradeDTO dto) {
-        Grade grade = new Grade();
-        BeanUtils.copyProperties(dto, grade);
+        Grade grade = GradeConvert.INSTANCE.convert(dto);
         save(grade);
     }
 
@@ -43,8 +42,7 @@ public class GradeServiceImpl extends ServiceImpl<GradeMapper, Grade> implements
         if (grade == null) {
             throw new BusinessException("成绩记录不存在");
         }
-        BeanUtils.copyProperties(dto, grade);
-        grade.setId(id);
+        GradeConvert.INSTANCE.updateEntity(grade, dto);
         updateById(grade);
     }
 

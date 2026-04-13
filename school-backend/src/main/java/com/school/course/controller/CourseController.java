@@ -9,8 +9,19 @@ import com.school.course.service.CourseService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * 课程管理接口
+ */
 @RestController
 @RequestMapping("/api/courses")
 @RequiredArgsConstructor
@@ -26,8 +37,8 @@ public class CourseController {
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) Long teacherId,
             @RequestParam(required = false) Long classId) {
-        Page<Course> pageResult = courseService.pageCourses(new Page<>(page, size), keyword, teacherId, classId);
-        return Result.success(new PageResult<>(pageResult.getRecords(), pageResult.getTotal(), pageResult.getSize(), pageResult.getCurrent()));
+        Page<Course> result = courseService.pageCourses(new Page<>(page, size), keyword, teacherId, classId);
+        return Result.success(PageResult.of(result));
     }
 
     @GetMapping("/{id}")
@@ -38,21 +49,21 @@ public class CourseController {
 
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
-    public Result<?> create(@Validated @RequestBody CourseDTO dto) {
+    public Result<Void> create(@Validated @RequestBody CourseDTO dto) {
         courseService.createCourse(dto);
         return Result.success();
     }
 
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public Result<?> update(@PathVariable Long id, @Validated @RequestBody CourseDTO dto) {
+    public Result<Void> update(@PathVariable Long id, @Validated @RequestBody CourseDTO dto) {
         courseService.updateCourse(id, dto);
         return Result.success();
     }
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public Result<?> delete(@PathVariable Long id) {
+    public Result<Void> delete(@PathVariable Long id) {
         courseService.deleteCourse(id);
         return Result.success();
     }

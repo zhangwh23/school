@@ -2,6 +2,11 @@ package com.school.common;
 
 import lombok.Data;
 
+/**
+ * 统一响应包装
+ *
+ * @param <T> 业务数据类型
+ */
 @Data
 public class Result<T> {
 
@@ -16,11 +21,19 @@ public class Result<T> {
     }
 
     public static <T> Result<T> success(T data) {
-        return new Result<>(200, "success", data);
+        return new Result<>(ResultCode.SUCCESS.getCode(), ResultCode.SUCCESS.getMessage(), data);
     }
 
     public static <T> Result<T> success() {
-        return new Result<>(200, "success", null);
+        return success(null);
+    }
+
+    public static <T> Result<T> error(ResultCode resultCode) {
+        return new Result<>(resultCode.getCode(), resultCode.getMessage(), null);
+    }
+
+    public static <T> Result<T> error(ResultCode resultCode, String message) {
+        return new Result<>(resultCode.getCode(), message, null);
     }
 
     public static <T> Result<T> error(int code, String message) {
@@ -28,6 +41,6 @@ public class Result<T> {
     }
 
     public static <T> Result<T> error(String message) {
-        return new Result<>(500, message, null);
+        return new Result<>(ResultCode.INTERNAL_ERROR.getCode(), message, null);
     }
 }

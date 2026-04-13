@@ -4,11 +4,11 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.school.common.BusinessException;
+import com.school.teacher.convert.TeacherConvert;
 import com.school.teacher.dto.TeacherDTO;
 import com.school.teacher.entity.Teacher;
 import com.school.teacher.mapper.TeacherMapper;
 import com.school.teacher.service.TeacherService;
-import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -37,15 +37,14 @@ public class TeacherServiceImpl extends ServiceImpl<TeacherMapper, Teacher> impl
 
     @Override
     public void createTeacher(TeacherDTO dto) {
-        Teacher teacher = new Teacher();
-        BeanUtils.copyProperties(dto, teacher);
+        Teacher teacher = TeacherConvert.INSTANCE.convert(dto);
         save(teacher);
     }
 
     @Override
     public void updateTeacher(Long id, TeacherDTO dto) {
         Teacher teacher = getTeacherById(id);
-        BeanUtils.copyProperties(dto, teacher);
+        TeacherConvert.INSTANCE.updateEntity(teacher, dto);
         updateById(teacher);
     }
 

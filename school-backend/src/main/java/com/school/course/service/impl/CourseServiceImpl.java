@@ -4,12 +4,12 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.school.common.BusinessException;
+import com.school.course.convert.CourseConvert;
 import com.school.course.dto.CourseDTO;
 import com.school.course.entity.Course;
 import com.school.course.mapper.CourseMapper;
 import com.school.course.service.CourseService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -40,16 +40,14 @@ public class CourseServiceImpl extends ServiceImpl<CourseMapper, Course> impleme
 
     @Override
     public void createCourse(CourseDTO dto) {
-        Course course = new Course();
-        BeanUtils.copyProperties(dto, course);
+        Course course = CourseConvert.INSTANCE.convert(dto);
         save(course);
     }
 
     @Override
     public void updateCourse(Long id, CourseDTO dto) {
         Course course = getCourseById(id);
-        BeanUtils.copyProperties(dto, course);
-        course.setId(id);
+        CourseConvert.INSTANCE.updateEntity(course, dto);
         updateById(course);
     }
 

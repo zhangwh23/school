@@ -4,16 +4,26 @@ import com.school.common.Result;
 import com.school.security.dto.LoginRequest;
 import com.school.security.dto.LoginResponse;
 import com.school.security.dto.UserInfoResponse;
+import com.school.system.convert.SysUserConvert;
 import com.school.system.entity.SysUser;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import javax.validation.Valid;
 
+/**
+ * 认证相关接口（登录、登出、当前用户信息）
+ */
+@Slf4j
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
@@ -31,9 +41,8 @@ public class AuthController {
         String token = jwtUtils.generateToken(loginUser.getUsername());
 
         SysUser user = loginUser.getSysUser();
-        LoginResponse response = new LoginResponse(
-                token, user.getUsername(), user.getRealName(), loginUser.getRoles());
-        return Result.success(response);
+        log.info("用户登录成功: username={}", user.getUsername());
+        return Result.success(new LoginResponse(token, user.getUsername(), user.getRealName(), loginUser.getRoles()));
     }
 
     @PostMapping("/logout")
@@ -45,15 +54,7 @@ public class AuthController {
     public Result<UserInfoResponse> getUserInfo() {
         LoginUser loginUser = (LoginUser) SecurityContextHolder.getContext()
                 .getAuthentication().getPrincipal();
-        SysUser user = loginUser.getSysUser();
-
-        UserInfoResponse info = new UserInfoResponse();
-        info.setId(user.getId());
-        info.setUsername(user.getUsername());
-        info.setRealName(user.getRealName());
-        info.setAvatar(user.getAvatar());
-        info.setPhone(user.getPhone());
-        info.setEmail(user.getEmail());
+        UserInfoResponse info = SysUserConvert.INSTANCE.toUserInfo(loginUser.getSysUser());
         info.setRoles(loginUser.getRoles());
         return Result.success(info);
     }

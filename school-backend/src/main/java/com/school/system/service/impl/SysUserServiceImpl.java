@@ -3,6 +3,8 @@ package com.school.system.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.school.common.BusinessException;
+import com.school.system.convert.SysUserConvert;
 import com.school.system.dto.SysUserDTO;
 import com.school.system.entity.SysUser;
 import com.school.system.entity.SysUserRole;
@@ -10,27 +12,27 @@ import com.school.system.mapper.SysUserMapper;
 import com.school.system.mapper.SysUserRoleMapper;
 import com.school.system.service.SysUserService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import java.util.Collection;
 import java.util.List;
 
 /**
  * 系统用户 Service 实现类
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> implements SysUserService {
 
+    private static final String DEFAULT_PASSWORD = "123456";
+
     private final SysUserRoleMapper userRoleMapper;
     private final PasswordEncoder passwordEncoder;
-
-    /**
-     * 默认密码
-     */
-    private static final String DEFAULT_PASSWORD = "123456";
 
     @Override
     public Page<SysUser> pageUsers(Page<SysUser> page, String keyword) {
@@ -41,55 +43,46 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
                     .like(SysUser::getRealName, keyword);
         }
         wrapper.orderByDesc(SysUser::getCreateTime);
-        return this.page(page, wrapper);
+        return page(page, wrapper);
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void createUser(SysUserDTO dto) {
-        SysUser user = new SysUser();
-        user.setUsername(dto.getUsername());
-        user.setPassword(passwordEncoder.encode(
-                StringUtils.hasText(dto.getPassword()) ? dto.getPassword() : DEFAULT_PASSWORD));
-        user.setRealName(dto.getRealName());
-        user.setPhone(dto.getPhone());
-        user.setEmail(dto.getEmail());
-        user.setStatus(dto.getStatus() != null ? dto.getStatus() : 1);
-        this.save(user);
-
-        // 保存用户角色关联
+        SysUser user = SysUserConvert.INSTANCE.convert(dto);
+        String rawPassword = StringUtils.hasText(dto.getPassword()) ? dto.getPassword() : DEFAULT_PASSWORD;
+        user.setPassword(passwordEncoder.encode(rawPassword));
+        if (dto.getStatus() != null) {
+            user.setStatus(dto.getStatus());
+        }
+        save(user);
         saveUserRoles(user.getId(), dto.getRoleIds());
+        log.info("创建系统用户: id={}, username={}", user.getId(), user.getUsername());
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void updateUser(Long id, SysUserDTO dto) {
-        SysUser user = this.getById(id);
+        SysUser user = getById(id);
         if (user == null) {
-            throw new RuntimeException("用户不存在");
+            throw new BusinessException("用户不存在");
         }
-        user.setUsername(dto.getUsername());
-        user.setRealName(dto.getRealName());
-        user.setPhone(dto.getPhone());
-        user.setEmail(dto.getEmail());
-        if (dto.getStatus() != null) {
-            user.setStatus(dto.getStatus());
-        }
-        this.updateById(user);
+        SysUserConvert.INSTANCE.updateEntity(user, dto);
+        updateById(user);
 
-        // 先删除原有角色关联，再重新插入
         userRoleMapper.delete(new LambdaQueryWrapper<SysUserRole>()
                 .eq(SysUserRole::getUserId, id));
         saveUserRoles(id, dto.getRoleIds());
+        log.info("更新系统用户: id={}", id);
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void deleteUser(Long id) {
-        this.removeById(id);
-        // 删除用户角色关联
+        removeById(id);
         userRoleMapper.delete(new LambdaQueryWrapper<SysUserRole>()
                 .eq(SysUserRole::getUserId, id));
+        log.info("删除系统用户: id={}", id);
     }
 
     @Override
@@ -97,23 +90,22 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
         SysUser user = new SysUser();
         user.setId(id);
         user.setPassword(passwordEncoder.encode(DEFAULT_PASSWORD));
-        this.updateById(user);
+        updateById(user);
+        log.info("重置系统用户密码: id={}", id);
     }
 
-    /**
-     * 保存用户角色关联
-     *
-     * @param userId  用户ID
-     * @param roleIds 角色ID列表
-     */
-    private void saveUserRoles(Long userId, List<Long> roleIds) {
-        if (roleIds != null && !roleIds.isEmpty()) {
-            for (Long roleId : roleIds) {
-                SysUserRole userRole = new SysUserRole();
-                userRole.setUserId(userId);
-                userRole.setRoleId(roleId);
-                userRoleMapper.insert(userRole);
-            }
+    private void saveUserRoles(Long userId, Collection<Long> roleIds) {
+        if (roleIds == null || roleIds.isEmpty()) {
+            return;
         }
+        List<SysUserRole> records = roleIds.stream()
+                .map(roleId -> {
+                    SysUserRole record = new SysUserRole();
+                    record.setUserId(userId);
+                    record.setRoleId(roleId);
+                    return record;
+                })
+                .toList();
+        records.forEach(userRoleMapper::insert);
     }
 }

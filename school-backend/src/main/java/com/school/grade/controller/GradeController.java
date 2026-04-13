@@ -10,10 +10,20 @@ import com.school.grade.service.GradeService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
+/**
+ * 成绩管理接口
+ */
 @RestController
 @RequestMapping("/api/grades")
 @RequiredArgsConstructor
@@ -29,20 +39,20 @@ public class GradeController {
             @RequestParam(required = false) Long studentId,
             @RequestParam(required = false) Long courseId,
             @RequestParam(required = false) String semester) {
-        Page<Grade> pageResult = gradeService.pageGrades(new Page<>(page, size), studentId, courseId, semester);
-        return Result.success(new PageResult<>(pageResult.getRecords(), pageResult.getTotal(), pageResult.getSize(), pageResult.getCurrent()));
+        Page<Grade> result = gradeService.pageGrades(new Page<>(page, size), studentId, courseId, semester);
+        return Result.success(PageResult.of(result));
     }
 
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN','TEACHER')")
-    public Result<?> create(@Validated @RequestBody GradeDTO dto) {
+    public Result<Void> create(@Validated @RequestBody GradeDTO dto) {
         gradeService.createGrade(dto);
         return Result.success();
     }
 
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN','TEACHER')")
-    public Result<?> update(@PathVariable Long id, @Validated @RequestBody GradeDTO dto) {
+    public Result<Void> update(@PathVariable Long id, @Validated @RequestBody GradeDTO dto) {
         gradeService.updateGrade(id, dto);
         return Result.success();
     }

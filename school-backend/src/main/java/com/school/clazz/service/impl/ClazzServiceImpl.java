@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.school.clazz.convert.ClazzConvert;
 import com.school.clazz.dto.ClazzDTO;
 import com.school.clazz.entity.Clazz;
 import com.school.clazz.mapper.ClazzMapper;
@@ -12,7 +13,6 @@ import com.school.common.BusinessException;
 import com.school.student.entity.Student;
 import com.school.student.mapper.StudentMapper;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -46,16 +46,14 @@ public class ClazzServiceImpl extends ServiceImpl<ClazzMapper, Clazz> implements
 
     @Override
     public void createClazz(ClazzDTO dto) {
-        Clazz clazz = new Clazz();
-        BeanUtils.copyProperties(dto, clazz);
+        Clazz clazz = ClazzConvert.INSTANCE.convert(dto);
         save(clazz);
     }
 
     @Override
     public void updateClazz(Long id, ClazzDTO dto) {
         Clazz clazz = getClazzById(id);
-        BeanUtils.copyProperties(dto, clazz);
-        clazz.setId(id);
+        ClazzConvert.INSTANCE.updateEntity(clazz, dto);
         updateById(clazz);
     }
 

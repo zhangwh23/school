@@ -10,9 +10,15 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+/**
+ * 全局异常处理器，将异常统一转换为 {@link Result} 响应
+ */
 @Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    private static final String VALIDATION_FALLBACK = "参数校验失败";
+    private static final String BIND_FALLBACK = "参数绑定失败";
 
     @ExceptionHandler(BusinessException.class)
     public Result<Void> handleBusinessException(BusinessException e) {
@@ -23,13 +29,13 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(BadCredentialsException.class)
     @ResponseStatus(HttpStatus.UNAUTHORIZED)
     public Result<Void> handleBadCredentialsException(BadCredentialsException e) {
-        return Result.error(401, "用户名或密码错误");
+        return Result.error(ResultCode.UNAUTHORIZED, "用户名或密码错误");
     }
 
     @ExceptionHandler(AccessDeniedException.class)
     @ResponseStatus(HttpStatus.FORBIDDEN)
     public Result<Void> handleAccessDeniedException(AccessDeniedException e) {
-        return Result.error(403, "没有权限访问");
+        return Result.error(ResultCode.FORBIDDEN, "没有权限访问");
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
@@ -37,8 +43,8 @@ public class GlobalExceptionHandler {
         String message = e.getBindingResult().getFieldErrors().stream()
                 .map(error -> error.getField() + ": " + error.getDefaultMessage())
                 .findFirst()
-                .orElse("参数校验失败");
-        return Result.error(400, message);
+                .orElse(VALIDATION_FALLBACK);
+        return Result.error(ResultCode.BAD_REQUEST, message);
     }
 
     @ExceptionHandler(BindException.class)
@@ -46,14 +52,14 @@ public class GlobalExceptionHandler {
         String message = e.getFieldErrors().stream()
                 .map(error -> error.getField() + ": " + error.getDefaultMessage())
                 .findFirst()
-                .orElse("参数绑定失败");
-        return Result.error(400, message);
+                .orElse(BIND_FALLBACK);
+        return Result.error(ResultCode.BAD_REQUEST, message);
     }
 
     @ExceptionHandler(Exception.class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     public Result<Void> handleException(Exception e) {
         log.error("系统异常", e);
-        return Result.error("系统异常，请联系管理员");
+        return Result.error(ResultCode.INTERNAL_ERROR, "系统异常，请联系管理员");
     }
 }
