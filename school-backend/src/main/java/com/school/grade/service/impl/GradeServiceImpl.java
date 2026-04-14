@@ -10,6 +10,7 @@ import com.school.grade.dto.GradeStatistics;
 import com.school.grade.entity.Grade;
 import com.school.grade.mapper.GradeMapper;
 import com.school.grade.service.GradeService;
+import com.school.grade.vo.GradeVO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -21,18 +22,23 @@ import java.util.List;
 public class GradeServiceImpl extends ServiceImpl<GradeMapper, Grade> implements GradeService {
 
     @Override
-    public Page<Grade> pageGrades(Page<Grade> page, Long studentId, Long courseId, String semester) {
+    public Page<GradeVO> pageGrades(Page<Grade> page, Long studentId, Long courseId, String semester) {
         LambdaQueryWrapper<Grade> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(studentId != null, Grade::getStudentId, studentId);
         wrapper.eq(courseId != null, Grade::getCourseId, courseId);
         wrapper.eq(StringUtils.hasText(semester), Grade::getSemester, semester);
         wrapper.orderByDesc(Grade::getCreateTime);
-        return page(page, wrapper);
+        Page<Grade> result = page(page, wrapper);
+        Page<GradeVO> voPage = new Page<>(result.getCurrent(), result.getSize(), result.getTotal());
+        voPage.setRecords(result.getRecords().stream()
+                .map(GradeConvert.INSTANCE::entityToVo)
+                .toList());
+        return voPage;
     }
 
     @Override
     public void createGrade(GradeDTO dto) {
-        Grade grade = GradeConvert.INSTANCE.convert(dto);
+        Grade grade = GradeConvert.INSTANCE.dtoToEntity(dto);
         save(grade);
     }
 
@@ -42,7 +48,7 @@ public class GradeServiceImpl extends ServiceImpl<GradeMapper, Grade> implements
         if (grade == null) {
             throw new BusinessException("成绩记录不存在");
         }
-        GradeConvert.INSTANCE.updateEntity(grade, dto);
+        GradeConvert.INSTANCE.updateEntityFromDto(grade, dto);
         updateById(grade);
     }
 

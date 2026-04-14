@@ -5,8 +5,8 @@ import com.school.common.PageResult;
 import com.school.common.Result;
 import com.school.grade.dto.GradeDTO;
 import com.school.grade.dto.GradeStatistics;
-import com.school.grade.entity.Grade;
 import com.school.grade.service.GradeService;
+import com.school.grade.vo.GradeVO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
@@ -21,9 +21,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
-/**
- * 成绩管理接口
- */
 @RestController
 @RequestMapping("/api/grades")
 @RequiredArgsConstructor
@@ -33,13 +30,13 @@ public class GradeController {
 
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN','TEACHER','STUDENT')")
-    public Result<PageResult<Grade>> list(
+    public Result<PageResult<GradeVO>> list(
             @RequestParam(defaultValue = "1") Integer page,
             @RequestParam(defaultValue = "10") Integer size,
             @RequestParam(required = false) Long studentId,
             @RequestParam(required = false) Long courseId,
             @RequestParam(required = false) String semester) {
-        Page<Grade> result = gradeService.pageGrades(new Page<>(page, size), studentId, courseId, semester);
+        Page<GradeVO> result = gradeService.pageGrades(new Page<>(page, size), studentId, courseId, semester);
         return Result.success(PageResult.of(result));
     }
 
