@@ -1,10 +1,16 @@
 package com.school.teacher.dto;
 
-import javax.validation.constraints.NotBlank;
 import lombok.Data;
+
+import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotNull;
 
 @Data
 public class TeacherDTO {
+
+    private Long id;
+
+    private Long userId;
 
     @NotBlank(message = "教师编号不能为空")
     private String teacherNo;
@@ -19,4 +25,6 @@ public class TeacherDTO {
     private String email;
 
     private String title;
+
+    private Integer status = 1;
 }

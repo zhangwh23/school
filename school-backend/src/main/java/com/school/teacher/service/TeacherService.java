@@ -4,12 +4,13 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.school.teacher.dto.TeacherDTO;
 import com.school.teacher.entity.Teacher;
+import com.school.teacher.vo.TeacherVO;
 
 public interface TeacherService extends IService<Teacher> {
 
-    Page<Teacher> pageTeachers(Page<Teacher> page, String keyword);
+    Page<TeacherVO> pageTeachers(Page<Teacher> page, String keyword);
 
-    Teacher getTeacherById(Long id);
+    TeacherVO getTeacherById(Long id);
 
     void createTeacher(TeacherDTO dto);
 
