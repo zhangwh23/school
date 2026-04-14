@@ -11,6 +11,7 @@ import com.school.system.entity.SysUserRole;
 import com.school.system.mapper.SysUserMapper;
 import com.school.system.mapper.SysUserRoleMapper;
 import com.school.system.service.SysUserService;
+import com.school.system.vo.SysUserVO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -21,9 +22,6 @@ import org.springframework.util.StringUtils;
 import java.util.Collection;
 import java.util.List;
 
-/**
- * 系统用户 Service 实现类
- */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -35,7 +33,7 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
     private final PasswordEncoder passwordEncoder;
 
     @Override
-    public Page<SysUser> pageUsers(Page<SysUser> page, String keyword) {
+    public Page<SysUserVO> pageUsers(Page<SysUser> page, String keyword) {
         LambdaQueryWrapper<SysUser> wrapper = new LambdaQueryWrapper<>();
         if (StringUtils.hasText(keyword)) {
             wrapper.like(SysUser::getUsername, keyword)
@@ -43,13 +41,18 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
                     .like(SysUser::getRealName, keyword);
         }
         wrapper.orderByDesc(SysUser::getCreateTime);
-        return page(page, wrapper);
+        Page<SysUser> result = page(page, wrapper);
+        Page<SysUserVO> voPage = new Page<>(result.getCurrent(), result.getSize(), result.getTotal());
+        voPage.setRecords(result.getRecords().stream()
+                .map(SysUserConvert.INSTANCE::entityToVo)
+                .toList());
+        return voPage;
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void createUser(SysUserDTO dto) {
-        SysUser user = SysUserConvert.INSTANCE.convert(dto);
+        SysUser user = SysUserConvert.INSTANCE.dtoToEntity(dto);
         String rawPassword = StringUtils.hasText(dto.getPassword()) ? dto.getPassword() : DEFAULT_PASSWORD;
         user.setPassword(passwordEncoder.encode(rawPassword));
         if (dto.getStatus() != null) {
@@ -67,7 +70,7 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
         if (user == null) {
             throw new BusinessException("用户不存在");
         }
-        SysUserConvert.INSTANCE.updateEntity(user, dto);
+        SysUserConvert.INSTANCE.updateEntityFromDto(user, dto);
         updateById(user);
 
         userRoleMapper.delete(new LambdaQueryWrapper<SysUserRole>()
@@ -79,6 +82,9 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void deleteUser(Long id) {
+        if (getById(id) == null) {
+            throw new BusinessException("用户不存在");
+        }
         removeById(id);
         userRoleMapper.delete(new LambdaQueryWrapper<SysUserRole>()
                 .eq(SysUserRole::getUserId, id));
@@ -87,8 +93,10 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
 
     @Override
     public void resetPassword(Long id) {
-        SysUser user = new SysUser();
-        user.setId(id);
+        SysUser user = getById(id);
+        if (user == null) {
+            throw new BusinessException("用户不存在");
+        }
         user.setPassword(passwordEncoder.encode(DEFAULT_PASSWORD));
         updateById(user);
         log.info("重置系统用户密码: id={}", id);

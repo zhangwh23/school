@@ -1,49 +1,27 @@
 package com.school.system.dto;
 
-import javax.validation.constraints.NotBlank;
 import lombok.Data;
 
+import javax.validation.constraints.NotBlank;
 import java.util.List;
 
-/**
- * 系统用户 DTO
- */
 @Data
 public class SysUserDTO {
 
-    /**
-     * 用户名
-     */
+    private Long id;
+
     @NotBlank(message = "用户名不能为空")
     private String username;
 
-    /**
-     * 密码
-     */
     private String password;
 
-    /**
-     * 真实姓名
-     */
     private String realName;
 
-    /**
-     * 手机号
-     */
     private String phone;
 
-    /**
-     * 邮箱
-     */
     private String email;
 
-    /**
-     * 状态（1-正常，0-禁用）
-     */
-    private Integer status;
+    private Integer status = 1;
 
-    /**
-     * 角色ID列表
-     */
     private List<Long> roleIds;
 }
