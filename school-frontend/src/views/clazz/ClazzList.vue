@@ -20,7 +20,7 @@
       <el-table :data="tableData" v-loading="loading" border stripe>
         <el-table-column prop="className" label="班级名称" />
         <el-table-column prop="gradeLevel" label="年级" width="120" />
-        <el-table-column prop="teacherId" label="班主任ID" width="120" />
+        <el-table-column prop="teacherName" label="班主任" width="120" />
         <el-table-column prop="studentCount" label="学生人数" width="100" />
         <el-table-column label="状态" width="80">
           <template #default="{ row }">
@@ -57,8 +57,10 @@
         <el-form-item label="年级">
           <el-input v-model="form.gradeLevel" placeholder="如：2025级" />
         </el-form-item>
-        <el-form-item label="班主任ID">
-          <el-input v-model="form.teacherId" />
+        <el-form-item label="班主任">
+          <el-select v-model="form.teacherId" placeholder="请选择班主任" style="width: 100%">
+            <el-option v-for="t in teacherOptions" :key="t.value" :label="t.label" :value="t.value" />
+          </el-select>
         </el-form-item>
       </el-form>
       <template #footer>
@@ -74,6 +76,7 @@ import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus } from '@element-plus/icons-vue'
 import { getClasses, createClazz, updateClazz, deleteClazz } from '@/api/clazz'
+import { getTeachers } from '@/api/teacher'
 import { useUserStore } from '@/stores/user'
 
 const userStore = useUserStore()
@@ -86,6 +89,15 @@ const formRef = ref(null)
 
 const queryParams = reactive({ page: 1, size: 10, keyword: '' })
 const form = ref({})
+
+// 下拉框选项
+const teacherOptions = ref([])
+
+// 加载下拉框数据
+async function loadDropdownData() {
+  const res = await getTeachers({ page: 1, size: 1000 })
+  teacherOptions.value = (res.data?.records || []).map(t => ({ label: t.name, value: t.id }))
+}
 
 const rules = {
   className: [{ required: true, message: '请输入班级名称', trigger: 'blur' }]
@@ -151,7 +163,10 @@ async function handleSubmit() {
   })
 }
 
-onMounted(fetchData)
+onMounted(() => {
+  loadDropdownData()
+  fetchData()
+})
 </script>
 
 <style scoped>

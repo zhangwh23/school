@@ -5,8 +5,10 @@
         <el-form-item label="关键词">
           <el-input v-model="queryParams.keyword" placeholder="姓名/学号" clearable @keyup.enter="handleSearch" />
         </el-form-item>
-        <el-form-item label="班级ID">
-          <el-input v-model="queryParams.classId" placeholder="班级ID" clearable />
+        <el-form-item label="班级">
+          <el-select v-model="queryParams.classId" clearable placeholder="请选择班级" style="width: 180px">
+            <el-option v-for="c in classOptions" :key="c.value" :label="c.label" :value="c.value" />
+          </el-select>
         </el-form-item>
         <el-form-item>
           <el-button type="primary" @click="handleSearch">查询</el-button>
@@ -29,6 +31,7 @@
         <el-table-column prop="age" label="年龄" width="70" />
         <el-table-column prop="phone" label="手机号" width="130" />
         <el-table-column prop="email" label="邮箱" />
+        <el-table-column prop="className" label="班级" width="120" />
         <el-table-column prop="enrollmentDate" label="入学日期" width="120" />
         <el-table-column label="状态" width="80">
           <template #default="{ row }">
@@ -80,8 +83,10 @@
         <el-form-item label="邮箱">
           <el-input v-model="form.email" />
         </el-form-item>
-        <el-form-item label="班级ID">
-          <el-input v-model="form.classId" />
+        <el-form-item label="班级">
+          <el-select v-model="form.classId" placeholder="请选择班级" style="width: 100%">
+            <el-option v-for="c in classOptions" :key="c.value" :label="c.label" :value="c.value" />
+          </el-select>
         </el-form-item>
         <el-form-item label="入学日期">
           <el-date-picker v-model="form.enrollmentDate" type="date" value-format="YYYY-MM-DD" />
@@ -100,6 +105,7 @@ import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus } from '@element-plus/icons-vue'
 import { getStudents, createStudent, updateStudent, deleteStudent } from '@/api/student'
+import { getClasses } from '@/api/clazz'
 import { useUserStore } from '@/stores/user'
 
 const userStore = useUserStore()
@@ -110,8 +116,17 @@ const dialogVisible = ref(false)
 const dialogTitle = ref('')
 const formRef = ref(null)
 
-const queryParams = reactive({ page: 1, size: 10, keyword: '', classId: '' })
+const queryParams = reactive({ page: 1, size: 10, keyword: '', classId: null })
 const form = ref({})
+
+// 下拉框选项
+const classOptions = ref([])
+
+// 加载下拉框数据
+async function loadDropdownData() {
+  const res = await getClasses({ page: 1, size: 1000 })
+  classOptions.value = (res.data?.records || []).map(c => ({ label: c.className, value: c.id }))
+}
 
 const rules = {
   studentNo: [{ required: true, message: '请输入学号', trigger: 'blur' }],
@@ -136,7 +151,7 @@ function handleSearch() {
 
 function handleReset() {
   queryParams.keyword = ''
-  queryParams.classId = ''
+  queryParams.classId = null
   queryParams.page = 1
   fetchData()
 }
@@ -179,7 +194,10 @@ async function handleSubmit() {
   })
 }
 
-onMounted(fetchData)
+onMounted(() => {
+  loadDropdownData()
+  fetchData()
+})
 </script>
 
 <style scoped>

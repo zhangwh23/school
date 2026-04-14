@@ -2,11 +2,15 @@
   <div class="page-container">
     <el-card>
       <el-form :inline="true" :model="queryParams" class="search-form">
-        <el-form-item label="学生ID">
-          <el-input v-model="queryParams.studentId" clearable />
+        <el-form-item label="学生">
+          <el-select v-model="queryParams.studentId" clearable placeholder="请选择学生" style="width: 180px">
+            <el-option v-for="s in studentOptions" :key="s.value" :label="s.label" :value="s.value" />
+          </el-select>
         </el-form-item>
-        <el-form-item label="课程ID">
-          <el-input v-model="queryParams.courseId" clearable />
+        <el-form-item label="课程">
+          <el-select v-model="queryParams.courseId" clearable placeholder="请选择课程" style="width: 180px">
+            <el-option v-for="c in courseOptions" :key="c.value" :label="c.label" :value="c.value" />
+          </el-select>
         </el-form-item>
         <el-form-item label="学期">
           <el-input v-model="queryParams.semester" placeholder="如: 2025-2026-1" clearable />
@@ -24,8 +28,8 @@
       </div>
 
       <el-table :data="tableData" v-loading="loading" border stripe>
-        <el-table-column prop="studentId" label="学生ID" width="100" />
-        <el-table-column prop="courseId" label="课程ID" width="100" />
+        <el-table-column prop="studentName" label="学生" width="120" />
+        <el-table-column prop="courseName" label="课程" width="180" />
         <el-table-column prop="score" label="成绩" width="100">
           <template #default="{ row }">
             <span :style="{ color: row.score >= 60 ? '#67c23a' : '#f56c6c', fontWeight: 'bold' }">
@@ -57,11 +61,15 @@
 
     <el-dialog v-model="dialogVisible" :title="dialogTitle" width="500px">
       <el-form ref="formRef" :model="form" :rules="rules" label-width="100px">
-        <el-form-item label="学生ID" prop="studentId">
-          <el-input v-model="form.studentId" />
+        <el-form-item label="学生" prop="studentId">
+          <el-select v-model="form.studentId" placeholder="请选择学生" style="width: 100%">
+            <el-option v-for="s in studentOptions" :key="s.value" :label="s.label" :value="s.value" />
+          </el-select>
         </el-form-item>
-        <el-form-item label="课程ID" prop="courseId">
-          <el-input v-model="form.courseId" />
+        <el-form-item label="课程" prop="courseId">
+          <el-select v-model="form.courseId" placeholder="请选择课程" style="width: 100%">
+            <el-option v-for="c in courseOptions" :key="c.value" :label="c.label" :value="c.value" />
+          </el-select>
         </el-form-item>
         <el-form-item label="成绩" prop="score">
           <el-input-number v-model="form.score" :min="0" :max="100" :step="0.5" :precision="2" />
@@ -90,6 +98,8 @@ import { ref, reactive, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Plus } from '@element-plus/icons-vue'
 import { getGrades, createGrade, updateGrade } from '@/api/grade'
+import { getStudents } from '@/api/student'
+import { getCourses } from '@/api/course'
 import { useUserStore } from '@/stores/user'
 
 const userStore = useUserStore()
@@ -100,12 +110,26 @@ const dialogVisible = ref(false)
 const dialogTitle = ref('')
 const formRef = ref(null)
 
-const queryParams = reactive({ page: 1, size: 10, studentId: '', courseId: '', semester: '' })
+const queryParams = reactive({ page: 1, size: 10, studentId: null, courseId: null, semester: '' })
 const form = ref({})
 
+// 下拉框选项
+const studentOptions = ref([])
+const courseOptions = ref([])
+
+// 加载下拉框数据
+async function loadDropdownData() {
+  const [students, courses] = await Promise.all([
+    getStudents({ page: 1, size: 1000 }),
+    getCourses({ page: 1, size: 1000 })
+  ])
+  studentOptions.value = (students.data?.records || []).map(s => ({ label: `${s.name} (${s.studentNo})`, value: s.id }))
+  courseOptions.value = (courses.data?.records || []).map(c => ({ label: c.courseName, value: c.id }))
+}
+
 const rules = {
-  studentId: [{ required: true, message: '请输入学生ID', trigger: 'blur' }],
-  courseId: [{ required: true, message: '请输入课程ID', trigger: 'blur' }],
+  studentId: [{ required: true, message: '请选择学生', trigger: 'change' }],
+  courseId: [{ required: true, message: '请选择课程', trigger: 'change' }],
   score: [{ required: true, message: '请输入成绩', trigger: 'blur' }],
   examType: [{ required: true, message: '请选择考试类型', trigger: 'change' }],
   semester: [{ required: true, message: '请输入学期', trigger: 'blur' }]
@@ -128,8 +152,8 @@ function handleSearch() {
 }
 
 function handleReset() {
-  queryParams.studentId = ''
-  queryParams.courseId = ''
+  queryParams.studentId = null
+  queryParams.courseId = null
   queryParams.semester = ''
   queryParams.page = 1
   fetchData()
@@ -163,7 +187,10 @@ async function handleSubmit() {
   })
 }
 
-onMounted(fetchData)
+onMounted(() => {
+  loadDropdownData()
+  fetchData()
+})
 </script>
 
 <style scoped>
