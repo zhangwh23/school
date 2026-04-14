@@ -4,8 +4,8 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.school.common.PageResult;
 import com.school.common.Result;
 import com.school.student.dto.StudentDTO;
-import com.school.student.entity.Student;
 import com.school.student.service.StudentService;
+import com.school.student.vo.StudentVO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
@@ -19,9 +19,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-/**
- * 学生管理接口
- */
 @RestController
 @RequestMapping("/api/students")
 @RequiredArgsConstructor
@@ -31,18 +28,18 @@ public class StudentController {
 
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN','TEACHER')")
-    public Result<PageResult<Student>> list(
+    public Result<PageResult<StudentVO>> list(
             @RequestParam(defaultValue = "1") Integer page,
             @RequestParam(defaultValue = "10") Integer size,
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) Long classId) {
-        Page<Student> result = studentService.pageStudents(new Page<>(page, size), keyword, classId);
+        Page<StudentVO> result = studentService.pageStudents(new Page<>(page, size), keyword, classId);
         return Result.success(PageResult.of(result));
     }
 
     @GetMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN','TEACHER')")
-    public Result<Student> detail(@PathVariable Long id) {
+    public Result<StudentVO> detail(@PathVariable Long id) {
         return Result.success(studentService.getStudentById(id));
     }
 
