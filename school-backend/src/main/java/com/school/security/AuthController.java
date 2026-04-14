@@ -54,7 +54,7 @@ public class AuthController {
     public Result<UserInfoResponse> getUserInfo() {
         LoginUser loginUser = (LoginUser) SecurityContextHolder.getContext()
                 .getAuthentication().getPrincipal();
-        UserInfoResponse info = SysUserConvert.INSTANCE.toUserInfo(loginUser.getSysUser());
+        UserInfoResponse info = SysUserConvert.INSTANCE.entityToUserInfo(loginUser.getSysUser());
         info.setRoles(loginUser.getRoles());
         return Result.success(info);
     }
