@@ -9,6 +9,7 @@ import com.school.clazz.dto.ClazzDTO;
 import com.school.clazz.entity.Clazz;
 import com.school.clazz.mapper.ClazzMapper;
 import com.school.clazz.service.ClazzService;
+import com.school.clazz.vo.ClazzVO;
 import com.school.common.BusinessException;
 import com.school.student.entity.Student;
 import com.school.student.mapper.StudentMapper;
@@ -26,56 +27,63 @@ public class ClazzServiceImpl extends ServiceImpl<ClazzMapper, Clazz> implements
     private final StudentMapper studentMapper;
 
     @Override
-    public Page<Clazz> pageClasses(Page<Clazz> page, String keyword) {
+    public Page<ClazzVO> pageClasses(Page<Clazz> page, String keyword) {
         LambdaQueryWrapper<Clazz> wrapper = new LambdaQueryWrapper<>();
         wrapper.and(StringUtils.hasText(keyword), w ->
                 w.like(Clazz::getClassName, keyword).or().like(Clazz::getGradeLevel, keyword)
         );
         wrapper.orderByDesc(Clazz::getCreateTime);
-        return page(page, wrapper);
+        Page<Clazz> result = page(page, wrapper);
+        Page<ClazzVO> voPage = new Page<>(result.getCurrent(), result.getSize(), result.getTotal());
+        voPage.setRecords(result.getRecords().stream()
+                .map(ClazzConvert.INSTANCE::entityToVo)
+                .toList());
+        return voPage;
     }
 
     @Override
-    public Clazz getClazzById(Long id) {
+    public ClazzVO getClazzById(Long id) {
         Clazz clazz = getById(id);
         if (clazz == null) {
             throw new BusinessException("班级不存在");
         }
-        return clazz;
+        return ClazzConvert.INSTANCE.entityToVo(clazz);
     }
 
     @Override
     public void createClazz(ClazzDTO dto) {
-        Clazz clazz = ClazzConvert.INSTANCE.convert(dto);
+        Clazz clazz = ClazzConvert.INSTANCE.dtoToEntity(dto);
         save(clazz);
     }
 
     @Override
     public void updateClazz(Long id, ClazzDTO dto) {
-        Clazz clazz = getClazzById(id);
-        ClazzConvert.INSTANCE.updateEntity(clazz, dto);
+        Clazz clazz = getById(id);
+        if (clazz == null) {
+            throw new BusinessException("班级不存在");
+        }
+        ClazzConvert.INSTANCE.updateEntityFromDto(clazz, dto);
         updateById(clazz);
     }
 
     @Override
     public void deleteClazz(Long id) {
-        getClazzById(id);
+        if (getById(id) == null) {
+            throw new BusinessException("班级不存在");
+        }
         removeById(id);
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void assignStudents(Long classId, List<Long> studentIds) {
-        // 确认班级存在
-        getClazzById(classId);
+        getById(classId);
 
-        // 批量更新学生的classId
         LambdaUpdateWrapper<Student> updateWrapper = new LambdaUpdateWrapper<>();
         updateWrapper.in(Student::getId, studentIds)
                 .set(Student::getClassId, classId);
         studentMapper.update(null, updateWrapper);
 
-        // 更新班级的studentCount
         LambdaQueryWrapper<Student> countWrapper = new LambdaQueryWrapper<>();
         countWrapper.eq(Student::getClassId, classId);
         long count = studentMapper.selectCount(countWrapper);

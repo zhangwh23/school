@@ -2,8 +2,8 @@ package com.school.clazz.controller;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.school.clazz.dto.ClazzDTO;
-import com.school.clazz.entity.Clazz;
 import com.school.clazz.service.ClazzService;
+import com.school.clazz.vo.ClazzVO;
 import com.school.common.PageResult;
 import com.school.common.Result;
 import lombok.RequiredArgsConstructor;
@@ -21,9 +21,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
-/**
- * 班级管理接口
- */
 @RestController
 @RequestMapping("/api/classes")
 @RequiredArgsConstructor
@@ -33,17 +30,17 @@ public class ClazzController {
 
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN','TEACHER')")
-    public Result<PageResult<Clazz>> list(
+    public Result<PageResult<ClazzVO>> list(
             @RequestParam(defaultValue = "1") Integer page,
             @RequestParam(defaultValue = "10") Integer size,
             @RequestParam(required = false) String keyword) {
-        Page<Clazz> result = clazzService.pageClasses(new Page<>(page, size), keyword);
+        Page<ClazzVO> result = clazzService.pageClasses(new Page<>(page, size), keyword);
         return Result.success(PageResult.of(result));
     }
 
     @GetMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN','TEACHER')")
-    public Result<Clazz> detail(@PathVariable Long id) {
+    public Result<ClazzVO> detail(@PathVariable Long id) {
         return Result.success(clazzService.getClazzById(id));
     }
 
