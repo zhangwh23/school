@@ -13,18 +13,24 @@ import com.school.clazz.vo.ClazzVO;
 import com.school.common.BusinessException;
 import com.school.student.entity.Student;
 import com.school.student.mapper.StudentMapper;
+import com.school.teacher.entity.Teacher;
+import com.school.teacher.mapper.TeacherMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class ClazzServiceImpl extends ServiceImpl<ClazzMapper, Clazz> implements ClazzService {
 
     private final StudentMapper studentMapper;
+    private final TeacherMapper teacherMapper;
 
     @Override
     public Page<ClazzVO> pageClasses(Page<Clazz> page, String keyword) {
@@ -35,8 +41,25 @@ public class ClazzServiceImpl extends ServiceImpl<ClazzMapper, Clazz> implements
         wrapper.orderByDesc(Clazz::getCreateTime);
         Page<Clazz> result = page(page, wrapper);
         Page<ClazzVO> voPage = new Page<>(result.getCurrent(), result.getSize(), result.getTotal());
-        voPage.setRecords(result.getRecords().stream()
-                .map(ClazzConvert.INSTANCE::entityToVo)
+
+        List<Clazz> records = result.getRecords();
+        Set<Long> teacherIds = records.stream()
+                .map(Clazz::getTeacherId)
+                .filter(id -> id != null)
+                .collect(Collectors.toSet());
+        Map<Long, String> teacherNameMap = teacherIds.isEmpty() ? Map.of() :
+                teacherMapper.selectList(new LambdaQueryWrapper<Teacher>()
+                                .in(Teacher::getId, teacherIds))
+                        .stream().collect(Collectors.toMap(Teacher::getId, Teacher::getName));
+
+        voPage.setRecords(records.stream()
+                .map(clazz -> {
+                    ClazzVO vo = ClazzConvert.INSTANCE.entityToVo(clazz);
+                    if (clazz.getTeacherId() != null) {
+                        vo.setTeacherName(teacherNameMap.get(clazz.getTeacherId()));
+                    }
+                    return vo;
+                })
                 .toList());
         return voPage;
     }
