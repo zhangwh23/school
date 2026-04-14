@@ -4,8 +4,8 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.school.common.PageResult;
 import com.school.common.Result;
 import com.school.course.dto.CourseDTO;
-import com.school.course.entity.Course;
 import com.school.course.service.CourseService;
+import com.school.course.vo.CourseVO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
@@ -19,9 +19,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-/**
- * 课程管理接口
- */
 @RestController
 @RequestMapping("/api/courses")
 @RequiredArgsConstructor
@@ -31,19 +28,19 @@ public class CourseController {
 
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN','TEACHER')")
-    public Result<PageResult<Course>> list(
+    public Result<PageResult<CourseVO>> list(
             @RequestParam(defaultValue = "1") Integer page,
             @RequestParam(defaultValue = "10") Integer size,
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) Long teacherId,
             @RequestParam(required = false) Long classId) {
-        Page<Course> result = courseService.pageCourses(new Page<>(page, size), keyword, teacherId, classId);
+        Page<CourseVO> result = courseService.pageCourses(new Page<>(page, size), keyword, teacherId, classId);
         return Result.success(PageResult.of(result));
     }
 
     @GetMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN','TEACHER')")
-    public Result<Course> detail(@PathVariable Long id) {
+    public Result<CourseVO> detail(@PathVariable Long id) {
         return Result.success(courseService.getCourseById(id));
     }
 

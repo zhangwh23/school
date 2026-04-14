@@ -9,6 +9,7 @@ import com.school.course.dto.CourseDTO;
 import com.school.course.entity.Course;
 import com.school.course.mapper.CourseMapper;
 import com.school.course.service.CourseService;
+import com.school.course.vo.CourseVO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -18,7 +19,7 @@ import org.springframework.util.StringUtils;
 public class CourseServiceImpl extends ServiceImpl<CourseMapper, Course> implements CourseService {
 
     @Override
-    public Page<Course> pageCourses(Page<Course> page, String keyword, Long teacherId, Long classId) {
+    public Page<CourseVO> pageCourses(Page<Course> page, String keyword, Long teacherId, Long classId) {
         LambdaQueryWrapper<Course> wrapper = new LambdaQueryWrapper<>();
         wrapper.and(StringUtils.hasText(keyword), w ->
                 w.like(Course::getCourseName, keyword).or().like(Course::getCourseCode, keyword)
@@ -26,34 +27,44 @@ public class CourseServiceImpl extends ServiceImpl<CourseMapper, Course> impleme
         wrapper.eq(teacherId != null, Course::getTeacherId, teacherId);
         wrapper.eq(classId != null, Course::getClassId, classId);
         wrapper.orderByDesc(Course::getCreateTime);
-        return page(page, wrapper);
+        Page<Course> result = page(page, wrapper);
+        Page<CourseVO> voPage = new Page<>(result.getCurrent(), result.getSize(), result.getTotal());
+        voPage.setRecords(result.getRecords().stream()
+                .map(CourseConvert.INSTANCE::entityToVo)
+                .toList());
+        return voPage;
     }
 
     @Override
-    public Course getCourseById(Long id) {
+    public CourseVO getCourseById(Long id) {
         Course course = getById(id);
         if (course == null) {
             throw new BusinessException("课程不存在");
         }
-        return course;
+        return CourseConvert.INSTANCE.entityToVo(course);
     }
 
     @Override
     public void createCourse(CourseDTO dto) {
-        Course course = CourseConvert.INSTANCE.convert(dto);
+        Course course = CourseConvert.INSTANCE.dtoToEntity(dto);
         save(course);
     }
 
     @Override
     public void updateCourse(Long id, CourseDTO dto) {
-        Course course = getCourseById(id);
-        CourseConvert.INSTANCE.updateEntity(course, dto);
+        Course course = getById(id);
+        if (course == null) {
+            throw new BusinessException("课程不存在");
+        }
+        CourseConvert.INSTANCE.updateEntityFromDto(course, dto);
         updateById(course);
     }
 
     @Override
     public void deleteCourse(Long id) {
-        getCourseById(id);
+        if (getById(id) == null) {
+            throw new BusinessException("课程不存在");
+        }
         removeById(id);
     }
 }
