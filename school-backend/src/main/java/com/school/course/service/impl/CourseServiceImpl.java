@@ -1,6 +1,5 @@
 package com.school.course.service.impl;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.school.clazz.entity.Clazz;
@@ -16,64 +15,36 @@ import com.school.teacher.entity.Teacher;
 import com.school.teacher.mapper.TeacherMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.util.StringUtils;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class CourseServiceImpl extends ServiceImpl<CourseMapper, Course> implements CourseService {
 
+    private final CourseMapper courseMapper;
     private final TeacherMapper teacherMapper;
     private final ClazzMapper clazzMapper;
 
     @Override
     public Page<CourseVO> pageCourses(Page<Course> page, String keyword, Long teacherId, Long classId) {
-        LambdaQueryWrapper<Course> wrapper = new LambdaQueryWrapper<>();
-        wrapper.and(StringUtils.hasText(keyword), w ->
-                w.like(Course::getCourseName, keyword).or().like(Course::getCourseCode, keyword)
-        );
-        wrapper.eq(teacherId != null, Course::getTeacherId, teacherId);
-        wrapper.eq(classId != null, Course::getClassId, classId);
-        wrapper.orderByDesc(Course::getCreateTime);
-        Page<Course> result = page(page, wrapper);
+        // 1. 分页查询课程
+        Page<Course> result = courseMapper.pageByCondition(page, keyword, teacherId, classId);
+
+        // 2. 查询关联的教师名称
+        Map<Long, String> teacherNameMap = getTeacherNameMap(result.getRecords());
+
+        // 3. 查询关联的班级名称
+        Map<Long, String> classNameMap = getClassNameMap(result.getRecords());
+
+        // 4. 转换并填充关联名称
         Page<CourseVO> voPage = new Page<>(result.getCurrent(), result.getSize(), result.getTotal());
-
-        List<Course> records = result.getRecords();
-        Set<Long> teacherIds = records.stream()
-                .map(Course::getTeacherId)
-                .filter(Objects::nonNull)
-                .collect(Collectors.toSet());
-        Map<Long, String> teacherNameMap = teacherIds.isEmpty() ? Map.of() :
-                teacherMapper.selectList(new LambdaQueryWrapper<Teacher>()
-                                .in(Teacher::getId, teacherIds))
-                        .stream().collect(Collectors.toMap(Teacher::getId, Teacher::getName));
-
-        Set<Long> classIds = records.stream()
-                .map(Course::getClassId)
-                .filter(Objects::nonNull)
-                .collect(Collectors.toSet());
-        Map<Long, String> classNameMap = classIds.isEmpty() ? Map.of() :
-                clazzMapper.selectList(new LambdaQueryWrapper<Clazz>()
-                                .in(Clazz::getId, classIds))
-                        .stream().collect(Collectors.toMap(Clazz::getId, Clazz::getClassName));
-
-        voPage.setRecords(records.stream()
-                .map(course -> {
-                    CourseVO vo = CourseConvert.INSTANCE.entityToVo(course);
-                    if (course.getTeacherId() != null) {
-                        vo.setTeacherName(teacherNameMap.get(course.getTeacherId()));
-                    }
-                    if (course.getClassId() != null) {
-                        vo.setClassName(classNameMap.get(course.getClassId()));
-                    }
-                    return vo;
-                })
-                .toList());
+        voPage.setRecords(toVoList(result.getRecords(), teacherNameMap, classNameMap));
         return voPage;
     }
 
@@ -108,5 +79,45 @@ public class CourseServiceImpl extends ServiceImpl<CourseMapper, Course> impleme
             throw new BusinessException("课程不存在");
         }
         removeById(id);
+    }
+
+    private Map<Long, String> getTeacherNameMap(List<Course> records) {
+        Set<Long> teacherIds = extractField(records, Course::getTeacherId);
+        if (teacherIds.isEmpty()) {
+            return Map.of();
+        }
+        return teacherMapper.getListByIds(teacherIds).stream()
+                .collect(Collectors.toMap(Teacher::getId, Teacher::getName));
+    }
+
+    private Map<Long, String> getClassNameMap(List<Course> records) {
+        Set<Long> classIds = extractField(records, Course::getClassId);
+        if (classIds.isEmpty()) {
+            return Map.of();
+        }
+        return clazzMapper.getListByIds(classIds).stream()
+                .collect(Collectors.toMap(Clazz::getId, Clazz::getClassName));
+    }
+
+    private <T> Set<Long> extractField(List<T> records, Function<T, Long> extractor) {
+        return records.stream()
+                .map(extractor)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+    }
+
+    private List<CourseVO> toVoList(List<Course> records, Map<Long, String> teacherNameMap, Map<Long, String> classNameMap) {
+        return records.stream()
+                .map(course -> {
+                    CourseVO vo = CourseConvert.INSTANCE.entityToVo(course);
+                    if (course.getTeacherId() != null) {
+                        vo.setTeacherName(teacherNameMap.get(course.getTeacherId()));
+                    }
+                    if (course.getClassId() != null) {
+                        vo.setClassName(classNameMap.get(course.getClassId()));
+                    }
+                    return vo;
+                })
+                .toList();
     }
 }
