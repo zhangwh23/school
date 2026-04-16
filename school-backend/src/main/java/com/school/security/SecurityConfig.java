@@ -46,6 +46,7 @@ public class SecurityConfig {
             .authorizeRequests()
             .antMatchers("/api/auth/login").permitAll()
             .antMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+            .antMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
             .anyRequest().authenticated()
             .and()
             .exceptionHandling()
