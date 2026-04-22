@@ -18,6 +18,7 @@ import org.springframework.util.StringUtils;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -41,7 +42,7 @@ public class StudentServiceImpl extends ServiceImpl<StudentMapper, Student> impl
         List<Student> records = result.getRecords();
         Set<Long> classIds = records.stream()
                 .map(Student::getClassId)
-                .filter(id -> id != null)
+                .filter(Objects::nonNull)
                 .collect(Collectors.toSet());
         Map<Long, String> classNameMap = classIds.isEmpty() ? Map.of() :
                 clazzMapper.selectList(new LambdaQueryWrapper<Clazz>()
