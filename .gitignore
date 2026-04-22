@@ -1,0 +1,32 @@
+# macOS
+.DS_Store
+
+# IDE
+.idea/
+.vscode/
+*.iml
+.factorypath
+.project
+.classpath
+.settings/
+
+# Java / Maven
+target/
+*.class
+*.jar
+*.war
+
+# Node / Frontend
+node_modules/
+dist/
+.npm
+.pnpm-debug.log*
+npm-debug.log*
+
+# Logs
+*.log
+logs/
+
+# Env
+.env
+.env.local

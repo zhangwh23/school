@@ -1,0 +1,13 @@
+  {
+    "mcpServers": {
+      "school": {
+        "command": "uvx",
+        "args": ["--refresh", "--from", "git+https://github.com/zhangwh23/school-mcp.git@master", "school-mcp"],
+        "env": {
+          "SCHOOL_API_BASE": "http://localhost:8080",
+          "SCHOOL_USERNAME": "admin",
+          "SCHOOL_PASSWORD": "123456"
+        }
+      }
+    }
+  }
